@@ -1,0 +1,147 @@
+// Your first program
+
+bool debug = true;
+
+//include file
+//load "Element_PkEdge"
+
+//-------------------------
+// define macro
+//-------------------------
+
+macro curl(u,v) (dx(v) - dy(u)) //EOM
+macro crossN(u,v) (u*N.y - v*N.x) //EOM
+
+//--------------------------
+// parameters
+//-------------------------
+
+//int nn = getARGV("-nn",50);
+int nn  = 50;
+int kn = 2;
+real Repsilon = 1.;
+real Cepsilon = 0.;
+
+// command parameter
+cout << "command parameter:" << endl;
+for(int index = 0; index < ARGV.n; ++index)
+{
+     cout << ARGV[index] << endl;
+}
+
+nn = atoi(ARGV[2]);
+cout << "nn = " << nn << endl;
+
+kn = atoi(ARGV[3]);
+cout << "kn = " << kn << endl;
+
+Repsilon = atof(ARGV[4]);
+cout << "epsilonprob.re = " << Repsilon << endl;
+
+Cepsilon = atof(ARGV[5]);
+cout << "epsilonprob.im = " << Cepsilon << endl;
+
+real k = kn*pi;
+complex epsilonprob = Repsilon - Cepsilon * 1i;
+
+// \mu _ r = 1, permeability
+
+cout << "epsilonprob:" << endl;
+cout << "epsilonprob.re = " << real(epsilonprob) << endl;
+cout << "epsilonprob.im = " << imag(epsilonprob) << endl;
+
+//-------------------------
+// analytic functions
+//-------------------------
+
+//righthand side of maxwell equation
+func f = exp(1.*((x-0.5)^2+(y-0.5)^2));
+
+//-------------------------
+// building mesh
+//-------------------------
+
+// Define a boundary
+border Nbound(t=0,2*pi){x=2*cos(t); y=2*sin(t);label = 1;}
+border Dbound(t=0, 2*pi){x=cos(t); y=sin(t);label = 2;}
+
+mesh Th = buildmesh(Nbound(2*nn)+Dbound(-nn));
+
+// plot(Th,wait=1,cmm="Grid information");
+
+//------------------------
+// build fe-space
+//------------------------
+
+//define a finite element space
+fespace Vh(Th,RT0Ortho);	//notice: edge element
+Vh<complex> [Ex,Ey];
+Vh<real> [Exr,Eyr],[Exi,Eyi];
+
+//------------------------
+// build varational formulation
+//------------------------
+varf vMaxwellA([u,v],[uu,vv])
+     = int2d(Th)((curl(u,v))'*(curl(uu,vv))
+                 -k*k*(epsilonprob)*[u,v]'*[uu,vv])
+     + int1d(Th,1)(1i*k*(crossN(u,v))'*(crossN(uu,vv)));
+     //+ on(2,u=0,v=0);
+     //+ on(2,crossN(u,v) = 0);
+
+varf vMaxwellRHS([u,v],[uu,vv])
+     = int2d(Th)([uu,vv]'*[0,f]);
+     //+ on(2, u=0, v=0);
+  //   + on(2,crossN(u,v) = 0);
+//------------------------
+// print matrix
+//-----------------------
+
+matrix<complex> vA;
+//vA = vMaxwellA(Vh, Vh,sym = 1, tgv = -2);
+vA = vMaxwellA(Vh, Vh,sym = 1, tgv = -2);
+
+complex[int] vRHS = vMaxwellRHS(0, Vh, tgv = -2);
+
+
+
+
+//print linear system
+ofstream maxwell2dA("maxwell-A.txt");
+maxwell2dA << vA << endl;
+
+ofstream maxwell2dRHS("maxwell-RHS.txt");
+maxwell2dRHS << vRHS << endl;
+
+//matrix<complex> vAt = vA.';
+// matrix vAreal,vAimag;
+// vAreal = vA.re;
+// vAimag = vA.im;
+// matrix vArealt = vAreal';
+// matrix vAimagt = vAimag';
+// vArealt -= vAreal;
+// vAimagt -= vAimag;
+// cout << "|| vArealt - vAreal ||_2 = " << vArealt.l2 << endl;
+// cout << "|| vArealt - vAreal ||_infty = " << vArealt.linfty << endl;
+
+// cout << "|| vAimagt - vAimag ||_2 = " << vAimagt.l2 << endl;
+// cout << "|| vAimagt - vAimag ||_infty = " << vAimagt.linfty << endl;
+
+
+//-----------------------
+// solve system
+//---------------------
+// set(vA,solver=GMRES);
+// Ex[] = vA^-1 * vRHS;
+
+// [Exr, Eyr] = [real(Ex), real(Ey)];
+// [Exi, Eyi] = [imag(Ex), imag(Ey)];
+
+//plot
+// plot([Exr, Eyr], wait = 1, cmm = "Real part");
+// plot([Exi, Eyi], wait = 1, cmm = "Imaginary part");
+
+//------------------------
+// element and dof
+//-----------------------
+cout << "#element:\t" << Th.nt << endl;
+cout << "#DOF:\t" << Vh.ndof << endl;
