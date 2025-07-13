@@ -39,3 +39,10 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+// command line
+/*
+ * ./app_linsys_freefem -mat <path/to/matrix/file>
+ *                      -rhs <path/to/rhs/file>
+ *                      -flag <0/1> 0: matrix file, 1: rhs file
+ */

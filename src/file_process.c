@@ -19,7 +19,7 @@ void FileProcessMatrix(const char *path)
     }
     sscanf(buffer, "%d%*d%d", &n, &nnz);
     // printf("n = %d, nnz = %d\n", n, nnz);
-    printf("%d\t%d\n", n, nnz);
+    // printf("%d\t%d\n", n, nnz);
 
     for (int index = 0; index < nnz; ++index)
     {
